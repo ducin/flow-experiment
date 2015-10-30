@@ -1,23 +1,32 @@
 (function($, _, Backbone) {
-    var ModalWrapper = function ModalWrapper(options){
+    var Modal = function Modal(options){
         // create original backbone/bootstrap-modal from the plugin
         var modal = new Backbone.BootstrapModal(options);
         // create internal modal deferred and attach async actions
-        var dfd = $.Deferred();
+        var modalDfd = $.Deferred();
+        var positiveStatus;
         modal.on("ok", function(){
-            dfd.resolve();
+            positiveStatus = true;
         });
         modal.on("cancel", function(){
-            dfd.reject();
+            positiveStatus = false;
+        });
+        // hacking internals
+        modal.$el.on("hidden.bs.modal", function(){
+            if (positiveStatus) {
+                modalDfd.resolve();
+            } else {
+                modalDfd.reject();
+            };
         });
         // wrap original open function to return the deferred object
         var _open = modal.open;
         modal.open = function(){
             _open.apply(modal, arguments);
-            return dfd.promise();
+            return modalDfd.promise();
         };
         return modal;
     };
 
-    Backbone.Modal = ModalWrapper;
+    Backbone.Modal = Modal;
 })(jQuery, _, Backbone);
